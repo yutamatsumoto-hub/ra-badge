@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ランパートアカデミー｜動画コース バッジ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ★ index.html と同じ値を貼る（同じプロジェクトを使います）★
+     Supabase → Project Settings → API -->
+<script>
+  const SUPABASE_URL      = "https://thqfxviodacwxfgvzopm.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_28ps21FfU3dTJeoe2BYpew_JkPP-0n0";
+  const COURSE = "video";
+</script>
+
+<style>
+  :root{
+    --bg:#F4F3EE; --surface:#FFFFFF; --ink:#2B2E33; --muted:#7C8089; --line:#E7E4DC;
+    --accent:#2F7E78; --accent-soft:#E4EFEC; --warm:#E08A4C; --warm-soft:#FBEDE0;
+    --gold:#C79A3A; --gold-soft:#F6EED8; --danger:#C25B4E;
+    --radius:18px; --radius-sm:12px;
+    --shadow:0 1px 2px rgba(43,46,51,.04), 0 8px 24px rgba(43,46,51,.06);
+    --font:"M PLUS Rounded 1c", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .hidden{display:none !important}
+  button{font-family:inherit;cursor:pointer}
+  textarea,input,select{font-family:inherit}
+
+  /* ログイン */
+  .auth-wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  .auth-card{width:100%;max-width:380px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:34px 28px;text-align:center}
+  .brand{font-weight:800;font-size:1.05rem}
+  .brand small{display:block;color:var(--muted);font-weight:500;font-size:.78rem;margin-top:2px}
+  .auth-card h1{font-size:1.35rem;margin:22px 0 4px;font-weight:800}
+  .auth-card p.sub{color:var(--muted);font-size:.85rem;margin:0 0 22px}
+  .field{text-align:left;margin-bottom:14px}
+  .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:6px;color:#4a4e55}
+  .field input{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:var(--radius-sm);font-size:1rem;background:#fff;color:var(--ink)}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .btn{width:100%;border:none;border-radius:var(--radius-sm);padding:14px;font-size:1rem;font-weight:700;color:#fff;background:var(--accent);transition:transform .08s,opacity .15s}
+  .btn:hover{opacity:.92}.btn:active{transform:scale(.985)}.btn[disabled]{opacity:.5;cursor:default}
+  .auth-msg{margin-top:14px;font-size:.85rem;min-height:1.2em}.auth-msg.err{color:var(--danger)}
+  .setup-note{margin-top:18px;font-size:.78rem;color:var(--muted);background:var(--warm-soft);border-radius:var(--radius-sm);padding:12px;text-align:left}
+
+  /* 共通 */
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(244,243,238,.86);backdrop-filter:saturate(1.2) blur(8px);border-bottom:1px solid var(--line)}
+  .topbar-inner{max-width:860px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .who{font-weight:700;font-size:.95rem}
+  .who .role-tag{display:inline-block;margin-left:8px;font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);vertical-align:middle}
+  .who .role-tag.staff{background:var(--warm-soft);color:var(--warm)}
+  .ghost{background:none;border:1.5px solid var(--line);color:var(--muted);border-radius:999px;padding:7px 15px;font-size:.82rem;font-weight:700}
+  .ghost:hover{border-color:var(--muted)}
+  main{max-width:860px;margin:0 auto;padding:22px 18px 80px}
+  .course-title{font-size:1.3rem;font-weight:800;margin:0 0 2px}
+  .course-sub{color:var(--muted);font-size:.85rem;margin:0 0 18px}
+  .picker{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .picker select{border:1.5px solid var(--line);border-radius:999px;padding:10px 16px;font-size:.9rem;background:#fff;color:var(--ink);font-weight:700}
+  .picker select:focus{outline:none;border-color:var(--accent)}
+
+  /* ロードマップ（今どこ） */
+  .road{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 8px;margin-bottom:18px;overflow-x:auto}
+  .road-track{display:flex;align-items:flex-start;min-width:max-content;padding:0 12px}
+  .stop{display:flex;flex-direction:column;align-items:center;width:104px;text-align:center;position:relative}
+  .stop .line{position:absolute;top:21px;left:-50%;width:100%;height:3px;background:var(--line);z-index:0}
+  .stop:first-child .line{display:none}
+  .stop.done .line{background:var(--gold)}
+  .stop .dot{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:1.15rem;background:#F1EFE9;border:2px solid var(--line);z-index:1;color:var(--muted)}
+  .stop.now .dot{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 4px var(--accent-soft)}
+  .stop.done .dot{background:var(--gold);border-color:var(--gold);color:#fff}
+  .stop .nm{font-size:.7rem;font-weight:700;margin-top:7px;line-height:1.25;color:var(--muted)}
+  .stop.now .nm{color:var(--accent)}
+  .stop.done .nm{color:var(--gold)}
+  .stop .badge-now{font-size:.6rem;font-weight:800;color:var(--accent);margin-top:2px}
+
+  /* サマリー */
+  .summary{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px;margin-bottom:18px}
+  .summary .row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .summary .count{font-size:1.05rem;font-weight:800}
+  .summary .count b{font-size:1.5rem;color:var(--accent)}
+  .summary .goal{color:var(--muted);font-size:.85rem;font-weight:700}
+  .bar{height:10px;border-radius:999px;background:var(--accent-soft);margin-top:12px;overflow:hidden}
+  .bar > span{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .4s}
+
+  /* バッジカード */
+  .cards{display:flex;flex-direction:column;gap:14px}
+  .bcard{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;transition:border-color .15s}
+  .bcard.earned{border-color:var(--gold)}
+  .bcard-head{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer}
+  .bcard-emoji{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:1.35rem;background:#F1EFE9;flex:0 0 auto}
+  .bcard.partial .bcard-emoji{background:var(--accent-soft)}
+  .bcard.earned .bcard-emoji{background:var(--gold-soft)}
+  .bcard-main{flex:1;min-width:0}
+  .bcard-name{font-weight:800;font-size:1rem}
+  .bcard-name .chk{color:var(--gold);margin-left:6px}
+  .bcard-desc{color:var(--muted);font-size:.8rem;margin-top:1px}
+  .bcard-prog{flex:0 0 auto;text-align:right}
+  .bcard-prog .n{font-weight:800;font-size:.95rem}
+  .bcard-prog .n.full{color:var(--gold)}
+  .bcard-prog .mini-bar{width:64px;height:6px;border-radius:999px;background:#EFEDE6;margin-top:5px;overflow:hidden}
+  .bcard-prog .mini-bar>span{display:block;height:100%;background:var(--accent)}
+  .bcard.earned .bcard-prog .mini-bar>span{background:var(--gold)}
+  .caret{flex:0 0 auto;color:var(--muted);transition:transform .2s;font-size:.9rem}
+  .bcard.open .caret{transform:rotate(180deg)}
+  .checklist{border-top:1px solid var(--line);padding:8px 18px 16px}
+  .citem{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed #EEEBE3}
+  .citem:last-child{border-bottom:none}
+  .cbox{width:26px;height:26px;border-radius:8px;border:1.8px solid var(--line);background:#fff;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:.85rem;font-weight:800;transition:all .12s}
+  .cbox.on{background:var(--accent);border-color:var(--accent)}
+  .citem.on .ctxt{color:var(--muted);text-decoration:line-through}
+  .ctxt{font-size:.92rem;font-weight:600}
+  .subhead{font-size:.72rem;font-weight:800;color:var(--accent);letter-spacing:.04em;margin:14px 0 2px}
+  .note-wrap{margin-top:12px}
+  .note-wrap label{font-size:.78rem;font-weight:700;color:#43474e;display:block;margin-bottom:6px}
+  .note-wrap textarea{width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;font-size:.9rem;resize:vertical;min-height:48px;color:var(--ink)}
+  .note-wrap textarea:focus{outline:none;border-color:var(--accent)}
+
+  /* 卒業課題カード */
+  .grad{margin-top:18px;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;background:linear-gradient(180deg,#fff, #FCFAF3);border:1.5px solid var(--line)}
+  .grad.unlocked{border-color:var(--gold)}
+  .grad.locked{opacity:.78}
+  .grad h3{margin:0 0 4px;font-size:1.08rem;font-weight:800}
+  .grad h3 .e{margin-right:6px}
+  .grad p{color:var(--muted);font-size:.86rem;margin:0 0 14px}
+  .grad .locktxt{font-size:.85rem;font-weight:700;color:var(--muted)}
+  .grad .gbtn{border:none;border-radius:var(--radius-sm);padding:13px 18px;font-weight:800;font-size:.95rem;color:#fff;background:var(--gold)}
+  .grad .gbtn.off{background:#fff;color:var(--gold);border:1.5px solid var(--gold)}
+  .grad .waiting{background:var(--gold-soft);color:var(--gold);border-radius:var(--radius-sm);padding:12px 14px;font-weight:800;text-align:center;font-size:.9rem}
+  .grad .done-banner{background:var(--gold);color:#fff;border-radius:var(--radius-sm);padding:14px;font-weight:800;text-align:center;font-size:1rem}
+
+  .empty{text-align:center;color:var(--muted);font-size:.9rem;padding:34px 10px}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-size:.86rem;font-weight:700;opacity:0;pointer-events:none;transition:all .25s;z-index:50}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--danger)}
+  @media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ログイン -->
+<div id="auth" class="auth-wrap">
+  <div class="auth-card">
+    <div class="brand">Rampart Academy<small>動画コース・バッジ</small></div>
+    <h1>ログイン</h1>
+    <p class="sub">デイリー記録と同じメール・パスワードでOK</p>
+    <div class="field"><label for="email">メールアドレス</label><input id="email" type="email" autocomplete="username" placeholder="you@example.com" /></div>
+    <div class="field"><label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password" placeholder="••••••••" /></div>
+    <button id="loginBtn" class="btn">ログイン</button>
+    <div id="authMsg" class="auth-msg"></div>
+    <div id="setupNote" class="setup-note hidden">⚙️ 上部の <b>SUPABASE_URL</b> と <b>SUPABASE_ANON_KEY</b> を、index.html と同じ値に書き換えてください。</div>
+  </div>
+</div>
+
+<!-- アプリ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="who"><span id="whoName">—</span><span id="roleTag" class="role-tag">利用者</span></div>
+      <button id="logoutBtn" class="ghost">ログアウト</button>
+    </div>
+  </div>
+  <main>
+    <h2 class="course-title">🎬 動画編集コース（Clipchamp）</h2>
+    <p class="course-sub">5つのバッジを集めて卒業課題へ。クリアでプレミアプロへ進めます。</p>
+    <div id="picker" class="picker hidden">
+      <span style="font-weight:700;font-size:.88rem;color:var(--muted)">メンバー</span>
+      <select id="memberSel"><option value="">選んでください</option></select>
+    </div>
+    <div id="board"></div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===== 初期化 ===== */
+const CONFIGURED = SUPABASE_URL && !SUPABASE_URL.includes("YOUR-PROJECT")
+                && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
+let db = null;
+if (CONFIGURED) db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (id)=>document.getElementById(id);
+let ME=null, TARGET=null, PROG={}, openKey=null;
+
+/* ===== バッジ定義（シートの行に対応） ===== */
+const BADGES = [
+  { key:"watch", name:"動画視聴", emoji:"🎬",
+    desc:"基礎の講座動画を見て、全体像をつかむ（〜11行目）",
+    items:[
+      {k:"v01",t:"01 オリエンテーション"},
+      {k:"v02",t:"02 動画編集のニーズ"},
+      {k:"v03",t:"03 動画編集の種類"},
+      {k:"v04",t:"04 編集ソフトの紹介"},
+      {k:"v05",t:"05 動画制作全体の流れ"},
+      {k:"v06",t:"06 動画編集の心得"},
+      {k:"v07",t:"07 Clipchamp使用準備"},
+      {k:"v08",t:"08 編集画面の構成理解"},
+    ]},
+  { key:"cut", name:"カット", emoji:"✂️",
+    desc:"カットドリルを全部クリアする",
+    groups:[
+      { head:"カットドリル（ビジュアル）", items:[
+        {k:"cv1",t:"① ビジュアル①"},{k:"cv2",t:"② ビジュアル②"},{k:"cv3",t:"③ ビジュアル③"},
+        {k:"cv4",t:"④ ビジュアル④"},{k:"cv5",t:"⑤ ビジュアル⑤"},
+      ]},
+      { head:"カットドリル（音声波形）", items:[
+        {k:"ca1",t:"① 音声波形①"},{k:"ca2",t:"② 音声波形②"},{k:"ca3",t:"③ 音声波形③"},
+        {k:"ca4",t:"④ 音声波形④"},{k:"ca5",t:"⑤ 音声波形⑤"},{k:"ca6",t:"⑥ 音声波形⑥"},
+      ]},
+    ]},
+  { key:"telop", name:"テロップ", emoji:"💬",
+    desc:"テロップドリルを全部クリアする",
+    items:[
+      {k:"t1",t:"テロップドリル①"},{k:"t2",t:"テロップドリル②"},{k:"t3",t:"テロップドリル③"},
+    ]},
+  { key:"book", name:"本の紹介", emoji:"📚",
+    desc:"本の紹介の応用課題を全部仕上げる（〜38行目）",
+    items:[
+      {k:"b1",t:"①「GoodLuck」"},
+      {k:"b2",t:"②「夜と霧」"},
+      {k:"b3",t:"③「内向型人間の時代」"},
+      {k:"b4",t:"④「さあ、才能に・・・」"},
+    ]},
+  { key:"spot", name:"観光スポット紹介", emoji:"🗺️",
+    desc:"観光スポット紹介の応用課題を全部仕上げる（〜62行目）",
+    items:[
+      {k:"s1",t:"①「京都哲学の道」"},
+      {k:"s2",t:"②「石巻のサイボーグ009」"},
+      {k:"s3",t:"③「京都マイナースポット」"},
+    ]},
+];
+const GRAD_DESC = "ABC株式会社 代表挨拶動画を作成 → 指導員の確認でClipchamp修了、プレミアプロへ！";
+
+/* ヘルパー：バッジの全項目キー */
+function allItems(b){ return b.groups ? b.groups.flatMap(g=>g.items) : b.items; }
+function doneOf(b){ const done=(PROG[b.key]&&PROG[b.key].items_done)||[]; const items=allItems(b); return items.filter(i=>done.includes(i.k)).length; }
+function totalOf(b){ return allItems(b).length; }
+function isEarned(b){ return doneOf(b)===totalOf(b); }
+function allBadgesEarned(){ return BADGES.every(isEarned); }
+function isGraduated(){ const g=PROG["graduation"]; return !!(g && (g.items_done||[]).includes("ok")); }
+
+function toast(msg,isErr=false){ const t=$("toast"); t.textContent=msg; t.className="show"+(isErr?" err":""); setTimeout(()=>{t.className="";},2200); }
+
+/* ===== 起動 ===== */
+(async function start(){
+  if(!CONFIGURED){ $("setupNote").classList.remove("hidden"); return; }
+  const { data:{ session } } = await db.auth.getSession();
+  if(session) await enterApp();
+})();
+
+/* ===== ログイン ===== */
+$("loginBtn").addEventListener("click", login);
+$("password").addEventListener("keydown", e=>{ if(e.key==="Enter") login(); });
+async function login(){
+  if(!CONFIGURED) return;
+  const email=$("email").value.trim(), password=$("password").value, msg=$("authMsg");
+  msg.textContent=""; msg.className="auth-msg";
+  if(!email||!password){ msg.textContent="メールとパスワードを入れてください"; msg.classList.add("err"); return; }
+  $("loginBtn").disabled=true; $("loginBtn").textContent="確認中…";
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  $("loginBtn").disabled=false; $("loginBtn").textContent="ログイン";
+  if(error){ msg.textContent="ログインできませんでした。確認してください。"; msg.classList.add("err"); return; }
+  await enterApp();
+}
+$("logoutBtn").addEventListener("click", async ()=>{
+  await db.auth.signOut(); ME=null; TARGET=null;
+  $("app").classList.add("hidden"); $("auth").classList.remove("hidden"); $("password").value="";
+});
+
+/* ===== アプリ起動 ===== */
+async function enterApp(){
+  const { data:{ user } } = await db.auth.getUser(); if(!user) return;
+  let { data:prof } = await db.from("profiles").select("full_name, role").eq("id", user.id).single();
+  if(!prof) prof = { full_name:user.email, role:"member" };
+  ME = { id:user.id, name:prof.full_name||user.email, role:prof.role||"member" };
+
+  $("auth").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("whoName").textContent = ME.name;
+  const tag=$("roleTag");
+  if(ME.role==="staff"){ tag.textContent="職員"; tag.classList.add("staff"); }
+  else { tag.textContent="利用者"; tag.classList.remove("staff"); }
+
+  if(ME.role==="staff"){
+    $("picker").classList.remove("hidden");
+    const { data:members } = await db.from("profiles").select("id, full_name").eq("role","member").order("full_name");
+    const sel=$("memberSel");
+    (members||[]).forEach(m=>{ const o=document.createElement("option"); o.value=m.id; o.textContent=m.full_name; sel.appendChild(o); });
+    sel.addEventListener("change", async ()=>{
+      if(!sel.value){ TARGET=null; $("board").innerHTML=`<div class="empty">メンバーを選ぶと進捗が表示されます</div>`; return; }
+      TARGET={ id:sel.value, name:sel.options[sel.selectedIndex].text };
+      await loadAndRender();
+    });
+    $("board").innerHTML=`<div class="empty">メンバーを選ぶと進捗が表示されます</div>`;
+  } else {
+    TARGET={ id:ME.id, name:ME.name };
+    await loadAndRender();
+  }
+}
+
+/* ===== 読み込み＆描画 ===== */
+async function loadAndRender(){
+  openKey=null; PROG={};
+  const { data } = await db.from("badge_progress").select("*").eq("user_id", TARGET.id).eq("course", COURSE);
+  (data||[]).forEach(r=> PROG[r.badge_key]=r );
+  render();
+}
+
+function currentStopIndex(){
+  for(let i=0;i<BADGES.length;i++){ if(!isEarned(BADGES[i])) return i; }
+  return BADGES.length; // 全バッジ済→卒業課題
+}
+
+function render(){
+  const got = BADGES.filter(isEarned).length;
+  const total = BADGES.length;
+  const grad = isGraduated();
+  const cur = grad ? -1 : currentStopIndex();
+
+  // ロードマップ
+  let road = `<div class="road"><div class="road-track">`;
+  BADGES.forEach((b,i)=>{
+    const done=isEarned(b); const now=(i===cur);
+    road += `<div class="stop ${done?'done':''} ${now?'now':''}">
+      <div class="line"></div><div class="dot">${done?'★':b.emoji}</div>
+      <div class="nm">${b.name}</div>${now?'<div class="badge-now">今ここ</div>':''}</div>`;
+  });
+  const gnow=(cur===BADGES.length && !grad);
+  road += `<div class="stop ${grad?'done':''} ${gnow?'now':''}">
+    <div class="line"></div><div class="dot">${grad?'★':'🎓'}</div>
+    <div class="nm">卒業課題</div>${gnow?'<div class="badge-now">今ここ</div>':''}</div>`;
+  road += `<div class="stop ${grad?'done':''}"><div class="line"></div><div class="dot">${grad?'🎉':'🏁'}</div><div class="nm">修了</div></div>`;
+  road += `</div></div>`;
+
+  // サマリー
+  const pct = Math.round(got/total*100);
+  const goalTxt = grad ? "🎉 Clipchamp修了！" : (got>=total ? "卒業課題に挑戦できます！" : `次は「${BADGES[cur].name}」`);
+  const summary = `<div class="summary">
+    <div class="row"><div class="count"><b>${got}</b> / ${total} バッジ</div><div class="goal">${goalTxt}</div></div>
+    <div class="bar"><span style="width:${pct}%"></span></div></div>`;
+
+  // バッジカード
+  let cards = `<div class="cards">`;
+  BADGES.forEach(b=>{
+    const d=doneOf(b), tt=totalOf(b), e=isEarned(b), partial=d>0&&!e, open=(openKey===b.key);
+    cards += `<div class="bcard ${e?'earned':partial?'partial':''} ${open?'open':''}" data-key="${b.key}">
+      <div class="bcard-head" data-toggle="${b.key}">
+        <div class="bcard-emoji">${b.emoji}</div>
+        <div class="bcard-main"><div class="bcard-name">${b.name}バッジ${e?'<span class="chk">✓</span>':''}</div>
+          <div class="bcard-desc">${b.desc}</div></div>
+        <div class="bcard-prog"><div class="n ${e?'full':''}">${d}/${tt}</div>
+          <div class="mini-bar"><span style="width:${Math.round(d/tt*100)}%"></span></div></div>
+        <div class="caret">▾</div>
+      </div>
+      ${open?renderChecklist(b):''}
+    </div>`;
+  });
+  cards += `</div>`;
+
+  // 卒業課題
+  const unlocked = allBadgesEarned();
+  let gradHtml = `<div class="grad ${grad?'unlocked':unlocked?'unlocked':'locked'}">
+    <h3><span class="e">🎓</span>卒業課題</h3><p>${GRAD_DESC}</p>`;
+  if(grad){
+    gradHtml += `<div class="done-banner">🎉 Clipchamp 修了！おつかれさま！</div>`;
+  } else if(!unlocked){
+    gradHtml += `<div class="locktxt">🔒 5つのバッジを全部集めると挑戦できます（あと ${total-got}）</div>`;
+  } else if(ME.role==="staff"){
+    gradHtml += `<button class="gbtn" id="gradOk">指導員OK（修了にする）</button>`;
+  } else {
+    gradHtml += `<div class="waiting">全バッジ達成！🎉 指導員の確認を待ってね</div>`;
+  }
+  gradHtml += `</div>`;
+
+  $("board").innerHTML = road + summary + cards + gradHtml;
+
+  // イベント
+  document.querySelectorAll("[data-toggle]").forEach(el=>{
+    el.addEventListener("click", ()=>{ openKey = (openKey===el.dataset.toggle)?null:el.dataset.toggle; render(); });
+  });
+  document.querySelectorAll(".citem").forEach(el=>{
+    el.addEventListener("click", ()=> toggleItem(el.dataset.badge, el.dataset.item));
+  });
+  const note=document.querySelector("#bnote");
+  if(note) note.addEventListener("blur", ()=> saveNote(note.dataset.badge, note.value));
+  const gradOk=$("gradOk");
+  if(gradOk) gradOk.addEventListener("click", graduate);
+}
+
+function renderChecklist(b){
+  const done=(PROG[b.key]&&PROG[b.key].items_done)||[];
+  const row=(it)=>`<div class="citem ${done.includes(it.k)?'on':''}" data-badge="${b.key}" data-item="${it.k}">
+      <div class="cbox ${done.includes(it.k)?'on':''}">${done.includes(it.k)?'✓':''}</div>
+      <div class="ctxt">${it.t}</div></div>`;
+  let body = `<div class="checklist">`;
+  if(b.groups){
+    b.groups.forEach(g=>{ body += `<div class="subhead">${g.head}</div>` + g.items.map(row).join(""); });
+  } else {
+    body += b.items.map(row).join("");
+  }
+  const note=(PROG[b.key]&&PROG[b.key].note)||"";
+  body += `<div class="note-wrap"><label>メモ（任意）</label>
+    <textarea id="bnote" data-badge="${b.key}" placeholder="様子・つまずき・できた点など">${escapeHtml(note)}</textarea></div>`;
+  body += `</div>`;
+  return body;
+}
+function escapeHtml(s){ const d=document.createElement("div"); d.textContent=s||""; return d.innerHTML; }
+
+/* ===== 保存 ===== */
+async function toggleItem(badgeKey, itemKey){
+  const b=BADGES.find(x=>x.key===badgeKey);
+  const row = PROG[badgeKey] || { items_done:[], note:null };
+  const set = new Set(row.items_done||[]);
+  set.has(itemKey) ? set.delete(itemKey) : set.add(itemKey);
+  row.items_done = [...set];
+  PROG[badgeKey] = row;
+  const wasEarned = !!row.earned_at;
+  render();
+  const nowEarned = isEarned(b);
+  await upsert(badgeKey, { items_done:row.items_done, note:row.note, earned_at: nowEarned ? (row.earned_at||new Date().toISOString()) : null });
+  if(nowEarned && !wasEarned) toast(`${b.name}バッジ取得！🎉`);
+}
+async function saveNote(badgeKey, val){
+  const row = PROG[badgeKey] || { items_done:[] };
+  row.note = val.trim()||null; PROG[badgeKey]=row;
+  await upsert(badgeKey, { items_done:row.items_done||[], note:row.note, earned_at:row.earned_at||null }, true);
+}
+async function graduate(){
+  if(!confirm(`${TARGET.name} さんを「Clipchamp修了」にします。よろしいですか？`)) return;
+  await upsert("graduation", { items_done:["ok"], note:null, earned_at:new Date().toISOString() });
+  toast("🎉 修了にしました！");
+  await loadAndRender();
+}
+async function upsert(badgeKey, fields, quiet=false){
+  const payload = { user_id:TARGET.id, course:COURSE, badge_key:badgeKey,
+    ...fields, updated_by:ME.id, updated_at:new Date().toISOString() };
+  const { data, error } = await db.from("badge_progress")
+    .upsert(payload, { onConflict:"user_id,course,badge_key" }).select("*").single();
+  if(error){ toast("保存に失敗しました", true); console.error(error); return; }
+  PROG[badgeKey] = data;
+  if(!quiet){ /* render済 */ }
+}
+</script>
+</body>
+</html>
